@@ -1,0 +1,10 @@
+build
+.idea
+.vscode
+.DS_Store
+cmake-build*
+vscode-generated-build
+doxy/gen
+webapp/*
+!webapp/index.html
+src/Engine/src/Processors/Scripting/Scripts/scriptPathConfig.h
