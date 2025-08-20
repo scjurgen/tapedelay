@@ -16,10 +16,14 @@ template <size_t BlockSize>
 class TapeDelay final : public EffectBase
 {
   public:
+    static constexpr size_t NumChannels{2};
+    static constexpr size_t NumReadHeads{4};
+    static constexpr float TapeNormSpeed{7.5f};
+
     explicit TapeDelay(const float sampleRate)
         : EffectBase(sampleRate)
         , m_sampleRate(sampleRate)
-        , m_sr(sampleRate, std::make_shared<AbacDsp::SincFilter>(AbacDsp::init_11_128))
+        , m_sr(sampleRate, std::make_shared<AbacDsp::SincFilter>(AbacDsp::init_4_128))
     {
         m_sr.setRatio(1.f);
         m_visualWavedata.resize(6000);
@@ -37,7 +41,7 @@ class TapeDelay final : public EffectBase
 
     void setTapeSpeed(const float value)
     {
-        m_tapeSpeed = value;
+        m_tapeSpeed = value / TapeNormSpeed;
         m_sr.setRatio(m_tapeSpeed);
     }
 
@@ -71,45 +75,73 @@ class TapeDelay final : public EffectBase
         m_noiseDistribution = value;
     }
 
+    void setDelayTime(const size_t hdIdx, const float value)
+    {
+        m_delayTime[hdIdx] = value;
+        m_sr.setReadHead(hdIdx, m_delayTime[hdIdx] / 1000 * m_sampleRate);
+    }
     void setDelayTime1(const float value)
     {
-        m_delayTime1 = value;
-        m_sr.setReadHead(m_delayTime1 / 1000 * m_sampleRate);
+        setDelayTime(0, value);
     }
-
-    void setDelayLevel1(const float value)
-    {
-        m_delayLevel1 = std::pow(10.f, value / 20.f);
-    }
-
     void setDelayTime2(const float value)
     {
-        m_delayTime2 = value;
+        setDelayTime(1, value);
     }
-
-    void setDelayLevel2(const float value)
-    {
-        m_delayLevel2 = std::pow(10.f, value / 20.f);
-    }
-
     void setDelayTime3(const float value)
     {
-        m_delayTime3 = value;
-    }
-
-    void setDelayLevel3(const float value)
-    {
-        m_delayLevel3 = std::pow(10.f, value / 20.f);
+        setDelayTime(2, value);
     }
 
     void setDelayTime4(const float value)
     {
-        m_delayTime4 = value;
+        setDelayTime(3, value);
     }
 
+    void setDelayLevel(const size_t hdIdx, const float value)
+    {
+        m_delayLevel[hdIdx] = std::pow(10.f, value / 20.f);
+    }
+
+    void setDelayLevel1(const float value)
+    {
+        setDelayLevel(0, value);
+    }
+
+    void setDelayLevel2(const float value)
+    {
+        setDelayLevel(1, value);
+    }
+
+    void setDelayLevel3(const float value)
+    {
+        setDelayLevel(2, value);
+    }
     void setDelayLevel4(const float value)
     {
-        m_delayLevel4 = std::pow(10.f, value / 20.f);
+        setDelayLevel(3, value);
+    }
+
+    void setFeedback(const size_t hdIdx, const float value)
+    {
+        m_feedbackFactor[hdIdx] = value;
+    }
+
+    void setFeedback1(const float value)
+    {
+        setFeedback(0, value);
+    }
+    void setFeedback2(const float value)
+    {
+        setFeedback(1, value);
+    }
+    void setFeedback3(const float value)
+    {
+        setFeedback(2, value);
+    }
+    void setFeedback4(const float value)
+    {
+        setFeedback(3, value);
     }
 
     void processBlock(const AudioBuffer<2, BlockSize>& in, AudioBuffer<2, BlockSize>& out)
@@ -117,16 +149,33 @@ class TapeDelay final : public EffectBase
         std::array<float, BlockSize * 2> m_tmp{};
         for (size_t i = 0; i < BlockSize; ++i)
         {
-            m_tmp[i * 2 + 0] = in(i, 0) * m_level;
-            m_tmp[i * 2 + 1] = in(i, 1) * m_level / 2;
+            for (size_t c = 0; c < NumChannels; ++c)
+            {
+                m_tmp[i * NumChannels + c] = in(i, c) * m_level + m_feedbackTmp[i * NumChannels + c];
+            }
         }
         m_sr.process(m_tmp.data(), BlockSize);
-        std::array<float, BlockSize * 2> m_delay1{};
-        m_sr.readBlock(m_delay1.data(), BlockSize);
+        std::ranges::fill(m_tmp, 0.f);
+        std::ranges::fill(m_feedbackTmp, 0.f);
+        for (size_t hdIdx = 0; hdIdx < NumReadHeads; ++hdIdx)
+        {
+            std::array<float, BlockSize * NumChannels> m_delay{};
+            m_sr.readBlock(hdIdx, m_delay.data(), BlockSize);
+            for (size_t i = 0, idx = 0; i < BlockSize; ++i, idx += 2)
+            {
+                for (size_t c = 0; c < NumChannels; ++c)
+                {
+                    m_feedbackTmp[idx + c] += m_feedbackFactor[hdIdx] * m_delay[idx + c];
+                    m_tmp[idx + c] += m_delayLevel[hdIdx] * m_delay[idx + c];
+                }
+            }
+        }
         for (size_t i = 0; i < BlockSize; ++i)
         {
-            out(i, 0) = m_tmp[i * 2 + 0] + m_delayLevel1 * m_delay1[i * 2 + 0];
-            out(i, 1) = m_tmp[i * 2 + 1] + m_delayLevel1 * m_delay1[i * 2 + 1];
+            for (size_t c = 0; c < NumChannels; ++c)
+            {
+                out(i, c) = m_tmp[i * NumChannels + c] + in(i, c);
+            }
         }
 
         m_visualWavedata[m_currentSample] = out(0, 0) * 0.5f;
@@ -155,16 +204,10 @@ class TapeDelay final : public EffectBase
     float m_saturation{0.f};
     float m_noiseFloor{0.f};
     float m_noiseDistribution{0.f};
-    float m_delayTime1{200.f};
-    float m_delayLevel1{1.f};
-    float m_delayTime2{50.f};
-    float m_delayLevel2{0.5f};
-    float m_delayTime3{50.f};
-    float m_delayLevel3{0.25f};
-    float m_delayTime4{50.f};
-    float m_delayLevel4{0.125};
+    std::array<float, NumReadHeads> m_delayTime{200.f, 50.f, 50.f, 50.f};
+    std::array<float, NumReadHeads> m_delayLevel{1.f, 0.5f, 0.25f, 0.125f};
     std::array<float, BlockSize * 2> m_feedbackTmp{};
-
+    std::array<float, NumReadHeads> m_feedbackFactor{};
 
     AbacDsp::VariReader<48000 * 60, 2> m_sr;
     std::vector<float> m_visualWavedata;

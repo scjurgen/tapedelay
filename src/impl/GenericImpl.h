@@ -26,17 +26,9 @@ class GenericImpl final : public EffectBase
     {
         m_tapeSpeed = value;
     }
-    void setFeedback(const float value)
-    {
-        m_feedback = value;
-    }
     void setHysteresis(const float value)
     {
         m_hysteresis = value;
-    }
-    void setSosTime(const float value)
-    {
-        m_sosTime = value;
     }
     void setSaturation(const float value)
     {
@@ -58,6 +50,10 @@ class GenericImpl final : public EffectBase
     {
         m_delayLevel1 = std::pow(10.f, value / 20.f);
     }
+    void setFeedback1(const float value)
+    {
+        m_feedback1 = value;
+    }
     void setDelayTime2(const float value)
     {
         m_delayTime2 = value;
@@ -65,6 +61,10 @@ class GenericImpl final : public EffectBase
     void setDelayLevel2(const float value)
     {
         m_delayLevel2 = std::pow(10.f, value / 20.f);
+    }
+    void setFeedback2(const float value)
+    {
+        m_feedback2 = value;
     }
     void setDelayTime3(const float value)
     {
@@ -74,6 +74,10 @@ class GenericImpl final : public EffectBase
     {
         m_delayLevel3 = std::pow(10.f, value / 20.f);
     }
+    void setFeedback3(const float value)
+    {
+        m_feedback3 = value;
+    }
     void setDelayTime4(const float value)
     {
         m_delayTime4 = value;
@@ -81,6 +85,10 @@ class GenericImpl final : public EffectBase
     void setDelayLevel4(const float value)
     {
         m_delayLevel4 = std::pow(10.f, value / 20.f);
+    }
+    void setFeedback4(const float value)
+    {
+        m_feedback4 = value;
     }
 
     void processBlock(const AudioBuffer<2, BlockSize>& in, AudioBuffer<2, BlockSize>& out)
@@ -108,20 +116,22 @@ class GenericImpl final : public EffectBase
   private:
     float m_level{};
     float m_tapeSpeed{};
-    float m_feedback{};
     float m_hysteresis{};
-    float m_sosTime{};
     float m_saturation{};
     float m_noiseFloor{};
     float m_noiseDistribution{};
     float m_delayTime1{};
     float m_delayLevel1{};
+    float m_feedback1{};
     float m_delayTime2{};
     float m_delayLevel2{};
+    float m_feedback2{};
     float m_delayTime3{};
     float m_delayLevel3{};
+    float m_feedback3{};
     float m_delayTime4{};
     float m_delayLevel4{};
+    float m_feedback4{};
 
 
     std::vector<float> m_visualWavedata;

@@ -48,13 +48,13 @@ class AudioPluginAudioProcessorEditor : public juce::AudioProcessorEditor, juce:
 
         std::vector<juce::Rectangle<int>> areas(6);
         const auto colWidth = area.getWidth() / 13;
-        const auto rowHeight = area.getHeight() / 7;
+        const auto rowHeight = area.getHeight() / 6;
         areas[0] = area.removeFromLeft(colWidth * 1).reduced(Constants::Margins::small);
         auto keepArea = area;
         areas[1] = area.removeFromTop(rowHeight * 1).reduced(Constants::Margins::small);
         areas[2] = area.removeFromTop(rowHeight * 1).reduced(Constants::Margins::small);
         areas[3] = area.removeFromTop(rowHeight * 1).reduced(Constants::Margins::small);
-        areas[4] = area.removeFromTop(rowHeight * 2).reduced(Constants::Margins::small);
+        areas[4] = area.removeFromTop(rowHeight * 1).reduced(Constants::Margins::small);
         areas[5] = area.reduced(Constants::Margins::small);
 
         {
@@ -81,9 +81,7 @@ class AudioPluginAudioProcessorEditor : public juce::AudioProcessorEditor, juce:
             box.flexWrap = juce::FlexBox::Wrap::noWrap;
             box.flexDirection = juce::FlexBox::Direction::row;
             box.justifyContent = juce::FlexBox::JustifyContent::spaceAround;
-            box.items.add(juce::FlexItem(feedbackDial).withFlex(1).withMargin(knobMarginSmall));
             box.items.add(juce::FlexItem(hysteresisDial).withFlex(1).withMargin(knobMarginSmall));
-            box.items.add(juce::FlexItem(sosTimeDial).withFlex(1).withMargin(knobMarginSmall));
             box.items.add(juce::FlexItem(noiseFloorDial).withFlex(1).withMargin(knobMarginSmall));
             box.items.add(juce::FlexItem(noiseDistributionDial).withFlex(1).withMargin(knobMarginSmall));
             box.performLayout(areas[2].toFloat());
@@ -95,12 +93,10 @@ class AudioPluginAudioProcessorEditor : public juce::AudioProcessorEditor, juce:
             box.justifyContent = juce::FlexBox::JustifyContent::spaceAround;
             box.items.add(juce::FlexItem(delayTime1Dial).withFlex(1).withMargin(knobMarginSmall));
             box.items.add(juce::FlexItem(delayLevel1Dial).withFlex(1).withMargin(knobMarginSmall));
+            box.items.add(juce::FlexItem(feedback1Dial).withFlex(1).withMargin(knobMarginSmall));
             box.items.add(juce::FlexItem(delayTime2Dial).withFlex(1).withMargin(knobMarginSmall));
             box.items.add(juce::FlexItem(delayLevel2Dial).withFlex(1).withMargin(knobMarginSmall));
-            box.items.add(juce::FlexItem(delayTime3Dial).withFlex(1).withMargin(knobMarginSmall));
-            box.items.add(juce::FlexItem(delayLevel3Dial).withFlex(1).withMargin(knobMarginSmall));
-            box.items.add(juce::FlexItem(delayTime4Dial).withFlex(1).withMargin(knobMarginSmall));
-            box.items.add(juce::FlexItem(delayLevel4Dial).withFlex(1).withMargin(knobMarginSmall));
+            box.items.add(juce::FlexItem(feedback2Dial).withFlex(1).withMargin(knobMarginSmall));
             box.performLayout(areas[3].toFloat());
         }
         {
@@ -108,7 +104,12 @@ class AudioPluginAudioProcessorEditor : public juce::AudioProcessorEditor, juce:
             box.flexWrap = juce::FlexBox::Wrap::noWrap;
             box.flexDirection = juce::FlexBox::Direction::row;
             box.justifyContent = juce::FlexBox::JustifyContent::spaceAround;
-            box.items.add(juce::FlexItem(spectrogramGauge).withFlex(1).withMargin(knobMarginSmall));
+            box.items.add(juce::FlexItem(delayTime3Dial).withFlex(1).withMargin(knobMarginSmall));
+            box.items.add(juce::FlexItem(delayLevel3Dial).withFlex(1).withMargin(knobMarginSmall));
+            box.items.add(juce::FlexItem(feedback3Dial).withFlex(1).withMargin(knobMarginSmall));
+            box.items.add(juce::FlexItem(delayTime4Dial).withFlex(1).withMargin(knobMarginSmall));
+            box.items.add(juce::FlexItem(delayLevel4Dial).withFlex(1).withMargin(knobMarginSmall));
+            box.items.add(juce::FlexItem(feedback4Dial).withFlex(1).withMargin(knobMarginSmall));
             box.performLayout(areas[4].toFloat());
         }
         {
@@ -116,6 +117,7 @@ class AudioPluginAudioProcessorEditor : public juce::AudioProcessorEditor, juce:
             box.flexWrap = juce::FlexBox::Wrap::noWrap;
             box.flexDirection = juce::FlexBox::Direction::row;
             box.justifyContent = juce::FlexBox::JustifyContent::spaceAround;
+            box.items.add(juce::FlexItem(spectrogramGauge).withFlex(1).withMargin(knobMarginSmall));
             box.items.add(juce::FlexItem(signalGauge).withFlex(1).withMargin(knobMarginSmall));
             box.performLayout(areas[5].toFloat());
         }
@@ -138,15 +140,9 @@ class AudioPluginAudioProcessorEditor : public juce::AudioProcessorEditor, juce:
         addAndMakeVisible(tapeSpeedDial);
         tapeSpeedDial.reset(valueTreeState, "tapeSpeed");
         tapeSpeedDial.setLabelText(juce::String::fromUTF8("Tape speed"));
-        addAndMakeVisible(feedbackDial);
-        feedbackDial.reset(valueTreeState, "feedback");
-        feedbackDial.setLabelText(juce::String::fromUTF8("Feedback"));
         addAndMakeVisible(hysteresisDial);
         hysteresisDial.reset(valueTreeState, "hysteresis");
         hysteresisDial.setLabelText(juce::String::fromUTF8("Hysteresis"));
-        addAndMakeVisible(sosTimeDial);
-        sosTimeDial.reset(valueTreeState, "sosTime");
-        sosTimeDial.setLabelText(juce::String::fromUTF8("SOS time"));
         addAndMakeVisible(saturationDial);
         saturationDial.reset(valueTreeState, "saturation");
         saturationDial.setLabelText(juce::String::fromUTF8("Saturation"));
@@ -162,24 +158,36 @@ class AudioPluginAudioProcessorEditor : public juce::AudioProcessorEditor, juce:
         addAndMakeVisible(delayLevel1Dial);
         delayLevel1Dial.reset(valueTreeState, "delayLevel1");
         delayLevel1Dial.setLabelText(juce::String::fromUTF8("Delay level 1"));
+        addAndMakeVisible(feedback1Dial);
+        feedback1Dial.reset(valueTreeState, "feedback1");
+        feedback1Dial.setLabelText(juce::String::fromUTF8("Feedback 1"));
         addAndMakeVisible(delayTime2Dial);
         delayTime2Dial.reset(valueTreeState, "delayTime2");
         delayTime2Dial.setLabelText(juce::String::fromUTF8("Delta time 2"));
         addAndMakeVisible(delayLevel2Dial);
         delayLevel2Dial.reset(valueTreeState, "delayLevel2");
         delayLevel2Dial.setLabelText(juce::String::fromUTF8("Delay level 2"));
+        addAndMakeVisible(feedback2Dial);
+        feedback2Dial.reset(valueTreeState, "feedback2");
+        feedback2Dial.setLabelText(juce::String::fromUTF8("Feedback 2"));
         addAndMakeVisible(delayTime3Dial);
         delayTime3Dial.reset(valueTreeState, "delayTime3");
         delayTime3Dial.setLabelText(juce::String::fromUTF8("Delta time 3"));
         addAndMakeVisible(delayLevel3Dial);
         delayLevel3Dial.reset(valueTreeState, "delayLevel3");
         delayLevel3Dial.setLabelText(juce::String::fromUTF8("Delay level 3"));
+        addAndMakeVisible(feedback3Dial);
+        feedback3Dial.reset(valueTreeState, "feedback3");
+        feedback3Dial.setLabelText(juce::String::fromUTF8("Feedback 3"));
         addAndMakeVisible(delayTime4Dial);
         delayTime4Dial.reset(valueTreeState, "delayTime4");
-        delayTime4Dial.setLabelText(juce::String::fromUTF8("Delta time 4"));
+        delayTime4Dial.setLabelText(juce::String::fromUTF8("SOS time"));
         addAndMakeVisible(delayLevel4Dial);
         delayLevel4Dial.reset(valueTreeState, "delayLevel4");
-        delayLevel4Dial.setLabelText(juce::String::fromUTF8("Delay level 4"));
+        delayLevel4Dial.setLabelText(juce::String::fromUTF8("SOS level"));
+        addAndMakeVisible(feedback4Dial);
+        feedback4Dial.reset(valueTreeState, "feedback4");
+        feedback4Dial.setLabelText(juce::String::fromUTF8("SOS Feedback "));
         addAndMakeVisible(cpuGauge);
         cpuGauge.setLabelText(juce::String::fromUTF8("CPU"));
         addAndMakeVisible(levelGauge);
@@ -198,20 +206,22 @@ class AudioPluginAudioProcessorEditor : public juce::AudioProcessorEditor, juce:
 
     CustomRotaryDial levelDial{this};
     CustomRotaryDial tapeSpeedDial{this};
-    CustomRotaryDial feedbackDial{this};
     CustomRotaryDial hysteresisDial{this};
-    CustomRotaryDial sosTimeDial{this};
     CustomRotaryDial saturationDial{this};
     CustomRotaryDial noiseFloorDial{this};
     CustomRotaryDial noiseDistributionDial{this};
     CustomRotaryDial delayTime1Dial{this};
     CustomRotaryDial delayLevel1Dial{this};
+    CustomRotaryDial feedback1Dial{this};
     CustomRotaryDial delayTime2Dial{this};
     CustomRotaryDial delayLevel2Dial{this};
+    CustomRotaryDial feedback2Dial{this};
     CustomRotaryDial delayTime3Dial{this};
     CustomRotaryDial delayLevel3Dial{this};
+    CustomRotaryDial feedback3Dial{this};
     CustomRotaryDial delayTime4Dial{this};
     CustomRotaryDial delayLevel4Dial{this};
+    CustomRotaryDial feedback4Dial{this};
     CpuGauge cpuGauge{};
     Gauge levelGauge{};
     SpectrogramDisplay spectrogramGauge{};

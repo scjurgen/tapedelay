@@ -3,24 +3,19 @@ cmake_minimum_required(VERSION 3.21)
 set(CMAKE_CXX_STANDARD 20)
 #cmake_policy(SET CMP0174 NEW)
 include(GoogleTest)
-
 macro(package_add_test TESTNAME)
     add_executable(${TESTNAME} ${ARGN})
     target_link_libraries(${TESTNAME} gtest gmock gtest_main)
-    # Add specific include directories here:
-    target_include_directories(${TESTNAME}
-            PRIVATE
-            "${PROJECT_SOURCE_DIR}/src"
-            "${PROJECT_SOURCE_DIR}/3rdparty/AbacDsp/src/includes"
-            "${PROJECT_SOURCE_DIR}/3rdparty/googletest"
-            "${PROJECT_SOURCE_DIR}/3rdparty/AbacDsp/3rdparty/AudioFile"
-    )
     gtest_discover_tests(${TESTNAME}
             WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
             PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${PROJECT_DIR}"
     )
     set_target_properties(${TESTNAME} PROPERTIES FOLDER tests)
 endmacro()
+
+include_directories("${PROJECT_SOURCE_DIR}/src")
+include_directories("${PROJECT_SOURCE_DIR}/3rdparty/AbacDsp/src/includes")
+include_directories("${PROJECT_SOURCE_DIR}/3rdparty/googletest")
 
 mark_as_advanced(
         BUILD_GMOCK BUILD_GTEST BUILD_SHARED_LIBS
@@ -31,4 +26,3 @@ mark_as_advanced(
 package_add_test(PluginTests
         Tapedelay_tests.cpp
 )
-
