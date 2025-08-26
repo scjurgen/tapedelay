@@ -40,7 +40,7 @@ namespace Margins
 namespace InitJuce
 {
     constexpr auto WindowWidth{1400};
-    constexpr auto WindowHeight{1000};
+    constexpr auto WindowHeight{900};
     constexpr auto TimerHertz = 60;
 }
 

@@ -18,13 +18,17 @@ class GenericImpl final : public EffectBase
     {
         m_visualWavedata.resize(6000);
     }
-    void setLevel(const float value)
+    void setFeedGain(const float value)
     {
-        m_level = std::pow(10.f, value / 20.f);
+        m_feedGain = std::pow(10.f, value / 20.f);
     }
     void setTapeSpeed(const float value)
     {
         m_tapeSpeed = value;
+    }
+    void setWow(const float value)
+    {
+        m_wow = value;
     }
     void setHysteresis(const float value)
     {
@@ -46,45 +50,45 @@ class GenericImpl final : public EffectBase
     {
         m_delayTime1 = value;
     }
-    void setDelayLevel1(const float value)
-    {
-        m_delayLevel1 = std::pow(10.f, value / 20.f);
-    }
-    void setFeedback1(const float value)
-    {
-        m_feedback1 = value;
-    }
     void setDelayTime2(const float value)
     {
         m_delayTime2 = value;
-    }
-    void setDelayLevel2(const float value)
-    {
-        m_delayLevel2 = std::pow(10.f, value / 20.f);
-    }
-    void setFeedback2(const float value)
-    {
-        m_feedback2 = value;
     }
     void setDelayTime3(const float value)
     {
         m_delayTime3 = value;
     }
-    void setDelayLevel3(const float value)
-    {
-        m_delayLevel3 = std::pow(10.f, value / 20.f);
-    }
-    void setFeedback3(const float value)
-    {
-        m_feedback3 = value;
-    }
     void setDelayTime4(const float value)
     {
         m_delayTime4 = value;
     }
+    void setDelayLevel1(const float value)
+    {
+        m_delayLevel1 = std::pow(10.f, value / 20.f);
+    }
+    void setDelayLevel2(const float value)
+    {
+        m_delayLevel2 = std::pow(10.f, value / 20.f);
+    }
+    void setDelayLevel3(const float value)
+    {
+        m_delayLevel3 = std::pow(10.f, value / 20.f);
+    }
     void setDelayLevel4(const float value)
     {
         m_delayLevel4 = std::pow(10.f, value / 20.f);
+    }
+    void setFeedback1(const float value)
+    {
+        m_feedback1 = value;
+    }
+    void setFeedback2(const float value)
+    {
+        m_feedback2 = value;
+    }
+    void setFeedback3(const float value)
+    {
+        m_feedback3 = value;
     }
     void setFeedback4(const float value)
     {
@@ -114,23 +118,24 @@ class GenericImpl final : public EffectBase
     }
 
   private:
-    float m_level{};
+    float m_feedGain{};
     float m_tapeSpeed{};
+    float m_wow{};
     float m_hysteresis{};
     float m_saturation{};
     float m_noiseFloor{};
     float m_noiseDistribution{};
     float m_delayTime1{};
-    float m_delayLevel1{};
-    float m_feedback1{};
     float m_delayTime2{};
-    float m_delayLevel2{};
-    float m_feedback2{};
     float m_delayTime3{};
-    float m_delayLevel3{};
-    float m_feedback3{};
     float m_delayTime4{};
+    float m_delayLevel1{};
+    float m_delayLevel2{};
+    float m_delayLevel3{};
     float m_delayLevel4{};
+    float m_feedback1{};
+    float m_feedback2{};
+    float m_feedback3{};
     float m_feedback4{};
 
 

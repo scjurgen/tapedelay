@@ -39,23 +39,24 @@ class AudioPluginAudioProcessor : public juce::AudioProcessor, public juce::Audi
         , m_envOutput{AbacDsp::RmsFollower(10000), AbacDsp::RmsFollower(10000)}
         , m_spectrogram{}
     {
-        m_parameters.addParameterListener("level", this);
+        m_parameters.addParameterListener("feedGain", this);
         m_parameters.addParameterListener("tapeSpeed", this);
+        m_parameters.addParameterListener("wow", this);
         m_parameters.addParameterListener("hysteresis", this);
         m_parameters.addParameterListener("saturation", this);
         m_parameters.addParameterListener("noiseFloor", this);
         m_parameters.addParameterListener("noiseDistribution", this);
         m_parameters.addParameterListener("delayTime1", this);
-        m_parameters.addParameterListener("delayLevel1", this);
-        m_parameters.addParameterListener("feedback1", this);
         m_parameters.addParameterListener("delayTime2", this);
-        m_parameters.addParameterListener("delayLevel2", this);
-        m_parameters.addParameterListener("feedback2", this);
         m_parameters.addParameterListener("delayTime3", this);
-        m_parameters.addParameterListener("delayLevel3", this);
-        m_parameters.addParameterListener("feedback3", this);
         m_parameters.addParameterListener("delayTime4", this);
+        m_parameters.addParameterListener("delayLevel1", this);
+        m_parameters.addParameterListener("delayLevel2", this);
+        m_parameters.addParameterListener("delayLevel3", this);
         m_parameters.addParameterListener("delayLevel4", this);
+        m_parameters.addParameterListener("feedback1", this);
+        m_parameters.addParameterListener("feedback2", this);
+        m_parameters.addParameterListener("feedback3", this);
         m_parameters.addParameterListener("feedback4", this);
     }
     ~AudioPluginAudioProcessor() override = default;
@@ -222,13 +223,17 @@ class AudioPluginAudioProcessor : public juce::AudioProcessor, public juce::Audi
     {
         std::vector<std::unique_ptr<juce::RangedAudioParameter>> params;
         params.push_back(std::make_unique<juce::AudioParameterFloat>(
-            juce::ParameterID("level", 1), "Level", juce::NormalisableRange<float>(-60, 12, 0.1, 1, false), 0,
-            juce::String("Level"), juce::AudioProcessorParameter::genericParameter,
+            juce::ParameterID("feedGain", 1), "Feed", juce::NormalisableRange<float>(-60, 12, 0.1, 1, false), 0,
+            juce::String("Feed"), juce::AudioProcessorParameter::genericParameter,
             [](float value, float) { return juce::String(value, 1) + " dB"; }));
         params.push_back(std::make_unique<juce::AudioParameterFloat>(
-            juce::ParameterID("tapeSpeed", 1), "Tape speed", juce::NormalisableRange<float>(1.5, 30.0, 0.1, 1.0, false),
+            juce::ParameterID("tapeSpeed", 1), "Tape speed", juce::NormalisableRange<float>(0.5, 60.0, 0.1, 1.0, false),
             7.5, juce::String("Tape speed"), juce::AudioProcessorParameter::genericParameter,
             [](float value, float) { return juce::String(value, 0) + " IPS"; }));
+        params.push_back(std::make_unique<juce::AudioParameterFloat>(
+            juce::ParameterID("wow", 1), "WOW", juce::NormalisableRange<float>(0, 1, 0.01, 1.0, false), 0,
+            juce::String("WOW"), juce::AudioProcessorParameter::genericParameter,
+            [](float value, float) { return juce::String(value, 0) + " "; }));
         params.push_back(std::make_unique<juce::AudioParameterFloat>(
             juce::ParameterID("hysteresis", 1), "Hysteresis", juce::NormalisableRange<float>(0, 1, 0.01, 1.0, false), 0,
             juce::String("Hysteresis"), juce::AudioProcessorParameter::genericParameter,
@@ -248,7 +253,22 @@ class AudioPluginAudioProcessor : public juce::AudioProcessor, public juce::Audi
             [](float value, float) { return juce::String(value, 0) + " "; }));
         params.push_back(std::make_unique<juce::AudioParameterFloat>(
             juce::ParameterID("delayTime1", 1), "Delay time 1",
-            juce::NormalisableRange<float>(0, 10000, 0.1, 0.4, false), 200, juce::String("Delay time 1"),
+            juce::NormalisableRange<float>(0, 1000, 0.1, 0.4, false), 200, juce::String("Delay time 1"),
+            juce::AudioProcessorParameter::genericParameter,
+            [](float value, float) { return juce::String(value, 0) + " ms"; }));
+        params.push_back(std::make_unique<juce::AudioParameterFloat>(
+            juce::ParameterID("delayTime2", 1), "Delay time 2",
+            juce::NormalisableRange<float>(0, 1000, 0.1, 0.4, false), 100, juce::String("Delay time 2"),
+            juce::AudioProcessorParameter::genericParameter,
+            [](float value, float) { return juce::String(value, 0) + " ms"; }));
+        params.push_back(std::make_unique<juce::AudioParameterFloat>(
+            juce::ParameterID("delayTime3", 1), "Delay time 3",
+            juce::NormalisableRange<float>(0, 1000, 0.1, 0.4, false), 100, juce::String("Delay time 3"),
+            juce::AudioProcessorParameter::genericParameter,
+            [](float value, float) { return juce::String(value, 0) + " ms"; }));
+        params.push_back(std::make_unique<juce::AudioParameterFloat>(
+            juce::ParameterID("delayTime4", 1), "Tape time 4",
+            juce::NormalisableRange<float>(1000, 10000, 0.1, 0.4, false), 2000, juce::String("Tape time 4"),
             juce::AudioProcessorParameter::genericParameter,
             [](float value, float) { return juce::String(value, 0) + " ms"; }));
         params.push_back(std::make_unique<juce::AudioParameterFloat>(
@@ -257,48 +277,35 @@ class AudioPluginAudioProcessor : public juce::AudioProcessor, public juce::Audi
             juce::AudioProcessorParameter::genericParameter,
             [](float value, float) { return juce::String(value, 0) + " dB"; }));
         params.push_back(std::make_unique<juce::AudioParameterFloat>(
-            juce::ParameterID("feedback1", 1), "Feedback 1", juce::NormalisableRange<float>(0, 1, 0.01, 1.0, false), 0,
-            juce::String("Feedback 1"), juce::AudioProcessorParameter::genericParameter,
-            [](float value, float) { return juce::String(value, 0) + " "; }));
-        params.push_back(std::make_unique<juce::AudioParameterFloat>(
-            juce::ParameterID("delayTime2", 1), "Delta time 2",
-            juce::NormalisableRange<float>(0, 10000, 0.1, 0.4, false), 100, juce::String("Delta time 2"),
-            juce::AudioProcessorParameter::genericParameter,
-            [](float value, float) { return juce::String(value, 0) + " ms"; }));
-        params.push_back(std::make_unique<juce::AudioParameterFloat>(
             juce::ParameterID("delayLevel2", 1), "Delay level 2",
             juce::NormalisableRange<float>(-72, 12, 0.1, 1.0, false), -6, juce::String("Delay level 2"),
             juce::AudioProcessorParameter::genericParameter,
             [](float value, float) { return juce::String(value, 0) + " dB"; }));
-        params.push_back(std::make_unique<juce::AudioParameterFloat>(
-            juce::ParameterID("feedback2", 1), "Feedback 2", juce::NormalisableRange<float>(0, 1, 0.01, 1.0, false), 0,
-            juce::String("Feedback 2"), juce::AudioProcessorParameter::genericParameter,
-            [](float value, float) { return juce::String(value, 0) + " "; }));
-        params.push_back(std::make_unique<juce::AudioParameterFloat>(
-            juce::ParameterID("delayTime3", 1), "Delta time 3",
-            juce::NormalisableRange<float>(0, 10000, 0.1, 0.4, false), 100, juce::String("Delta time 3"),
-            juce::AudioProcessorParameter::genericParameter,
-            [](float value, float) { return juce::String(value, 0) + " ms"; }));
         params.push_back(std::make_unique<juce::AudioParameterFloat>(
             juce::ParameterID("delayLevel3", 1), "Delay level 3",
             juce::NormalisableRange<float>(-72, 12, 0.1, 1.0, false), -12, juce::String("Delay level 3"),
             juce::AudioProcessorParameter::genericParameter,
             [](float value, float) { return juce::String(value, 0) + " dB"; }));
         params.push_back(std::make_unique<juce::AudioParameterFloat>(
+            juce::ParameterID("delayLevel4", 1), "Delay level 4",
+            juce::NormalisableRange<float>(-72, 12, 0.1, 1.0, false), -18, juce::String("Delay level 4"),
+            juce::AudioProcessorParameter::genericParameter,
+            [](float value, float) { return juce::String(value, 0) + " dB"; }));
+        params.push_back(std::make_unique<juce::AudioParameterFloat>(
+            juce::ParameterID("feedback1", 1), "Feedback 1", juce::NormalisableRange<float>(0, 1, 0.01, 1.0, false), 0,
+            juce::String("Feedback 1"), juce::AudioProcessorParameter::genericParameter,
+            [](float value, float) { return juce::String(value, 0) + " "; }));
+        params.push_back(std::make_unique<juce::AudioParameterFloat>(
+            juce::ParameterID("feedback2", 1), "Feedback 2", juce::NormalisableRange<float>(0, 1, 0.01, 1.0, false), 0,
+            juce::String("Feedback 2"), juce::AudioProcessorParameter::genericParameter,
+            [](float value, float) { return juce::String(value, 0) + " "; }));
+        params.push_back(std::make_unique<juce::AudioParameterFloat>(
             juce::ParameterID("feedback3", 1), "Feedback 3", juce::NormalisableRange<float>(0, 1, 0.01, 1.0, false), 0,
             juce::String("Feedback 3"), juce::AudioProcessorParameter::genericParameter,
             [](float value, float) { return juce::String(value, 0) + " "; }));
         params.push_back(std::make_unique<juce::AudioParameterFloat>(
-            juce::ParameterID("delayTime4", 1), "SOS time", juce::NormalisableRange<float>(0, 10000, 0.1, 0.4, false),
-            100, juce::String("SOS time"), juce::AudioProcessorParameter::genericParameter,
-            [](float value, float) { return juce::String(value, 0) + " ms"; }));
-        params.push_back(std::make_unique<juce::AudioParameterFloat>(
-            juce::ParameterID("delayLevel4", 1), "SOS level", juce::NormalisableRange<float>(-72, 12, 0.1, 1.0, false),
-            -18, juce::String("SOS level"), juce::AudioProcessorParameter::genericParameter,
-            [](float value, float) { return juce::String(value, 0) + " dB"; }));
-        params.push_back(std::make_unique<juce::AudioParameterFloat>(
-            juce::ParameterID("feedback4", 1), "SOS Feedback ", juce::NormalisableRange<float>(0, 1, 0.01, 1.0, false),
-            0, juce::String("SOS Feedback "), juce::AudioProcessorParameter::genericParameter,
+            juce::ParameterID("feedback4", 1), "Feedback 4", juce::NormalisableRange<float>(0, 1, 0.01, 1.0, false), 0,
+            juce::String("Feedback 4"), juce::AudioProcessorParameter::genericParameter,
             [](float value, float) { return juce::String(value, 0) + " "; }));
 
         return {params.begin(), params.end()};
@@ -312,28 +319,29 @@ class AudioPluginAudioProcessor : public juce::AudioProcessor, public juce::Audi
             return;
         }
         static const std::map<juce::String, std::function<void(AudioPluginAudioProcessor&, float)>> parameterMap{
-            {"level", [](const AudioPluginAudioProcessor& p, const float v) { p.pluginRunner->setLevel(v); }},
+            {"feedGain", [](const AudioPluginAudioProcessor& p, const float v) { p.pluginRunner->setFeedGain(v); }},
             {"tapeSpeed", [](const AudioPluginAudioProcessor& p, const float v) { p.pluginRunner->setTapeSpeed(v); }},
+            {"wow", [](const AudioPluginAudioProcessor& p, const float v) { p.pluginRunner->setWow(v); }},
             {"hysteresis", [](const AudioPluginAudioProcessor& p, const float v) { p.pluginRunner->setHysteresis(v); }},
             {"saturation", [](const AudioPluginAudioProcessor& p, const float v) { p.pluginRunner->setSaturation(v); }},
             {"noiseFloor", [](const AudioPluginAudioProcessor& p, const float v) { p.pluginRunner->setNoiseFloor(v); }},
             {"noiseDistribution",
              [](const AudioPluginAudioProcessor& p, const float v) { p.pluginRunner->setNoiseDistribution(v); }},
             {"delayTime1", [](const AudioPluginAudioProcessor& p, const float v) { p.pluginRunner->setDelayTime1(v); }},
+            {"delayTime2", [](const AudioPluginAudioProcessor& p, const float v) { p.pluginRunner->setDelayTime2(v); }},
+            {"delayTime3", [](const AudioPluginAudioProcessor& p, const float v) { p.pluginRunner->setDelayTime3(v); }},
+            {"delayTime4", [](const AudioPluginAudioProcessor& p, const float v) { p.pluginRunner->setDelayTime4(v); }},
             {"delayLevel1",
              [](const AudioPluginAudioProcessor& p, const float v) { p.pluginRunner->setDelayLevel1(v); }},
-            {"feedback1", [](const AudioPluginAudioProcessor& p, const float v) { p.pluginRunner->setFeedback1(v); }},
-            {"delayTime2", [](const AudioPluginAudioProcessor& p, const float v) { p.pluginRunner->setDelayTime2(v); }},
             {"delayLevel2",
              [](const AudioPluginAudioProcessor& p, const float v) { p.pluginRunner->setDelayLevel2(v); }},
-            {"feedback2", [](const AudioPluginAudioProcessor& p, const float v) { p.pluginRunner->setFeedback2(v); }},
-            {"delayTime3", [](const AudioPluginAudioProcessor& p, const float v) { p.pluginRunner->setDelayTime3(v); }},
             {"delayLevel3",
              [](const AudioPluginAudioProcessor& p, const float v) { p.pluginRunner->setDelayLevel3(v); }},
-            {"feedback3", [](const AudioPluginAudioProcessor& p, const float v) { p.pluginRunner->setFeedback3(v); }},
-            {"delayTime4", [](const AudioPluginAudioProcessor& p, const float v) { p.pluginRunner->setDelayTime4(v); }},
             {"delayLevel4",
              [](const AudioPluginAudioProcessor& p, const float v) { p.pluginRunner->setDelayLevel4(v); }},
+            {"feedback1", [](const AudioPluginAudioProcessor& p, const float v) { p.pluginRunner->setFeedback1(v); }},
+            {"feedback2", [](const AudioPluginAudioProcessor& p, const float v) { p.pluginRunner->setFeedback2(v); }},
+            {"feedback3", [](const AudioPluginAudioProcessor& p, const float v) { p.pluginRunner->setFeedback3(v); }},
             {"feedback4", [](const AudioPluginAudioProcessor& p, const float v) { p.pluginRunner->setFeedback4(v); }},
 
         };

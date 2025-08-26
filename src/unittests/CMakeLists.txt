@@ -24,5 +24,5 @@ mark_as_advanced(
 )
 
 package_add_test(PluginTests
-        Tapedelay_tests.cpp
+        TapedelayIntegration_tests.cpp
 )
